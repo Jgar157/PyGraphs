@@ -15,6 +15,8 @@ class Vertex:
 
     # Default color of a vertex if black.
     black = (0, 0, 0)
+    selectedColor = (0, 0, 255)
+    secondarySelectedColor = (255, 0, 0)
 
     # Default radius of vertex is 2.
     radius = 5
@@ -28,8 +30,9 @@ class Vertex:
         self.posX = posX
         self.posY = posY
         self.color = color
+        self.edges = []
 
-    def drawVertex(self):
+    def draw(self):
         """
         Draws a vertex onto a screen
         """
@@ -41,6 +44,8 @@ class Vertex:
     def isInBounds(self, x, y):
         """
         Checks if a given position is within the boundary of a vertex
+        x: Position x
+        y: Position y
         """
         if (self.getPosX() + self.getRadius() + self.buffer >= x >=
             self.getPosX() -
@@ -52,14 +57,37 @@ class Vertex:
 
         return False
 
+    def addEdge(self, edge):
+        """
+        Adds an edge to the vertex's list of edges
+        vertex: the vertex to be added
+        """
+        if edge in self.edges:
+            print("Vertex already contains the given edge")
+        else:
+            self.edges.append(edge)
+
+    def removeEdge(self, edge):
+        """
+        Removes the given edge from the list of edges
+        edge: The edge to be removed
+        """
+        if edge in self.edges:
+            self.edges.remove(edge)
+        else:
+            print("Edge does not exist in list of edges")
+
     def setColor(self, color):
         """
         Changes the color of a given vertex
         """
-        if self.color != self.black:
-            self.color = self.black
-        else:
-            self.color = color
+        self.color = color
+
+    def setColorDefault(self):
+        """
+        Sets the color to the default color
+        """
+        self.setColor(self.getDefaultColor())
 
     def getPosX(self):
         """
@@ -84,6 +112,12 @@ class Vertex:
         Gets the value of the radius for each vertex
         """
         return self.radius
+
+    def getDefaultColor(self):
+        """
+        Returns the default color
+        """
+        return self.black
 
 
 def getScreen():

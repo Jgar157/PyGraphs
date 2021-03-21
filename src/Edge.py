@@ -31,13 +31,31 @@ class Edge:
         """
         return self.vertexTwo
 
-    def drawEdge(self):
+    def draw(self):
         """
         Draws the edge from vertexOne to vertexTwo
         """
         gfxdraw.line(getScreen(), self.vertexOne.getPosX(),
                      self.vertexOne.getPosY(), self.vertexTwo.getPosX(),
                      self.vertexTwo.getPosY(), self.color)
+
+    def setColor(self, color):
+        """
+        Sets the color for the edge
+        """
+        self.color = color
+
+    def getDefaultColor(self):
+        """
+        Returns the default color of the edge
+        """
+        return self.black
+
+    def setColorDefault(self):
+        """
+        Sets the color to the default color
+        """
+        self.setColor(self.getDefaultColor())
 
 
 def setScreen(tempScreen):
