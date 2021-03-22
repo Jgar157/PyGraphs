@@ -31,6 +31,19 @@ class Edge:
         """
         return self.vertexTwo
 
+    def areVerticesCorrect(self, one, two):
+        """
+        Checks if inputted vertices are the vertices of the edge
+        one: The first vertex
+        two: The second vertex
+        """
+        if self.vertexOne == one and self.vertexTwo == two:
+            return True
+        elif self.vertexOne == two and self.vertexTwo == one:
+            return True
+        else:
+            return False
+
     def draw(self):
         """
         Draws the edge from vertexOne to vertexTwo

@@ -15,8 +15,8 @@ class Pygraph:
         self.ySize = ySize
 
         self.screen = None
-        self.selected = None
-        self.secondarySelected = []
+        self.primarySelected = None
+        self.secondarySelected = None
 
         self.vertices = []
         self.edges = []
@@ -58,28 +58,32 @@ class Pygraph:
 
                 for x in range(len(vertices)):  # Scan over all vertices
                     if vertices[x].isInBounds(pos[0], pos[1]):
-                        self.select(vertices[x])
-                        self.drawVertices()
-                        pygame.display.update()
+
+                        if event.button == 1:
+                            self.select(vertices[x])
+                            self.drawVertices()
+                            pygame.display.update()
+
+                        elif event.button == 3:
+                            self.makeVertexPrimary(vertices[x])
+
                         return False  # there is no new vertex
 
                 # If a vertex has not been clicked then we add a new vertex
                 vertices.append(Vertex.Vertex(pos[0], pos[1]))
                 return True
 
-            if event.type == pygame.KEYDOWN:
+            elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_x:
                     self.resetScreen()
 
-                if event.key == pygame.K_e:
-                    self.generateEdges()
-                    self.drawEdges()
-                    self.drawVertices()
-
-                if event.key == pygame.K_SPACE:  # Easy way of unselecting everything
-                    if self.selected is not None:
+                elif event.key == pygame.K_SPACE:  # Easy way of unselecting everything
+                    if self.primarySelected is not None:
                         self.unselectPrimary()
                         self.drawVertices()
+
+                elif event.key == pygame.K_DELETE:
+                    self.deleteSelected()
 
                 pygame.display.update()
 
@@ -93,16 +97,21 @@ class Pygraph:
         self.screen = pygame.display.set_mode((self.xSize, self.ySize), pygame.SCALED)
         self.screen.fill(self.color)
 
-    def generateEdges(self):
+    def generateEdge(self):
         """
-        Generates edge based on selected vertices
+        Generates edge based on primarySelected vertices
+        return: False if the edge already exists
         """
-        if self.selected is not None:
-            for secondaryVertex in self.secondarySelected:
-                tempEdge = Edge.Edge(self.selected, secondaryVertex)
-                self.selected.addEdge(tempEdge)
-                secondaryVertex.addEdge(tempEdge)
-                self.edges.append(tempEdge)
+        for edges in self.primarySelected.getEdges():
+            if edges.areVerticesCorrect(self.primarySelected, self.secondarySelected):
+                print("Vertex already exists")
+                return False  # Breaks the function from continuing
+
+        if self.primarySelected is not None and self.secondarySelected is not None:
+            tempEdge = Edge.Edge(self.primarySelected, self.secondarySelected)
+            self.primarySelected.addEdge(tempEdge)
+            self.secondarySelected.addEdge(tempEdge)
+            self.edges.append(tempEdge)
 
     def drawVertices(self):
         """
@@ -125,8 +134,15 @@ class Pygraph:
         print("Good")
         self.vertices.clear()
         self.edges.clear()
-        self.selected = None
-        self.secondarySelected.clear()
+        self.primarySelected = None
+        self.secondarySelected = None
+        self.screen.fill((255, 255, 255))
+        pygame.display.update()
+
+    def clearScreen(self):
+        """
+        Makes the entire screen white
+        """
         self.screen.fill((255, 255, 255))
         pygame.display.update()
 
@@ -139,51 +155,107 @@ class Pygraph:
 
     def select(self, selectable):
         """
-        Sets the selected vertex
+        Sets the primarySelected vertex
         """
-        if selectable == self.selected:  # Clears all vertices if original is reclicked
+        if selectable == self.primarySelected:  # Clears all vertices if original is reclicked
             self.unselectPrimary()
 
-        elif self.selected is not None:  # Checks if original already clicked
+        elif self.primarySelected is not None:  # Checks if original already clicked
 
-            if selectable in self.secondarySelected:  # If already selected, unselect
-                self.unselectSecondary(selectable)
-            else:  # If not selected, unselect
+            if self.secondarySelected is None:  # What to do if there is no secondarySelected
+                self.selectSecondary(selectable)
+
+            elif selectable == self.secondarySelected:  # If already primarySelected, unselect
+                self.unselectSecondary()
+
+            else:  # If not primarySelected, unselect
+                self.unselectSecondary()
                 self.selectSecondary(selectable)
 
         else:
-            self.selected = selectable
+            self.primarySelected = selectable
             selectable.setColor(selectable.selectedColor)
 
         pygame.display.update()
+
+    def clearSelected(self):
+        """
+        Sets both primary selected and secondary selected to none
+        """
+        self.primarySelected = None
+        self.secondarySelected = None
 
     def unselectPrimary(self):
         """
         Unselects the primary vertex
         """
-        self.selected.setColorDefault()
+        if self.primarySelected is not None:
+            self.primarySelected.setColorDefault()
 
-        for selected in self.secondarySelected:
-            selected.setColorDefault()
+        if self.secondarySelected is not None:
+            self.secondarySelected.setColorDefault()
 
-        self.secondarySelected.clear()
-        self.selected = None
+        # Clears both the primary and the secondary
+        self.primarySelected = None
+        self.secondarySelected = None
 
         self.drawVertices()
+        pygame.display.update()
 
-    def unselectSecondary(self, secondary):
+    def makeVertexPrimary(self, selected):
+        """
+        Makes the primary the newly selected vertex and clears the secondary
+        selected: The new primary
+        """
+        if self.secondarySelected is None and self.primarySelected is None:
+            self.select(selected)
+        else:
+            print("Selecting Primary")
+            self.unselectPrimary()
+            self.select(selected)
+
+        self.drawVertices()
+        pygame.display.update()
+
+    def unselectSecondary(self):
         """
         Unselects the secondary vertex clicked
         secondary: The vertex to be unselected
         """
-        secondary.setColorDefault()
-        self.secondarySelected.remove(secondary)
+        self.secondarySelected.setColorDefault()
+        self.secondarySelected = None
 
-    def selectSecondary(self, secondary):
+    def selectSecondary(self, selected):
         """
-        Selects a secondary vertex
-        secondary: The vertex to be selected
+        Selects a secondary vertex, which means an edge has been generated.
+        secondary: The vertex to be primarySelected
         """
-        self.secondarySelected.append(secondary)
-        secondary.setColor(secondary.secondarySelectedColor)
-        print(self.secondarySelected)
+        self.secondarySelected = selected
+        self.secondarySelected.setColor(self.secondarySelected.secondarySelectedColor)
+        self.generateEdge()
+        self.drawEdges()
+
+    def deleteSelected(self):
+        """
+        Deletes the selected object.
+        Vertex: Removes vertex from vertices and then iterates over the edges of the vertex to remove those edges
+        from the edges list and the edges list for both vertices of each edge.
+        Finally: Unselects
+        """
+        if isinstance(self.primarySelected, Vertex.Vertex):
+            self.vertices.remove(self.primarySelected)
+
+            tempList = self.primarySelected.getEdges().copy()
+
+            for edgeToBeRemoved in tempList:  # Loops over primary's edges and removes from list
+
+                self.edges.remove(edgeToBeRemoved)
+                edgeToBeRemoved.getVertexOne().removeEdge(edgeToBeRemoved)  # Removes the edge from both vertices
+                edgeToBeRemoved.getVertexTwo().removeEdge(edgeToBeRemoved)
+
+            self.unselectPrimary()
+
+        self.clearScreen()
+
+        self.drawEdges()
+        self.drawVertices()

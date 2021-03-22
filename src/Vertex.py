@@ -77,6 +77,12 @@ class Vertex:
         else:
             print("Edge does not exist in list of edges")
 
+    def getEdges(self):
+        """
+        Returns the edge list of the vertex
+        """
+        return self.edges
+
     def setColor(self, color):
         """
         Changes the color of a given vertex
