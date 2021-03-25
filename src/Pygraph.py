@@ -60,7 +60,7 @@ class Pygraph:
                     if vertices[x].isInBounds(pos[0], pos[1]):
 
                         if event.button == 1:
-                            self.select(vertices[x])
+                            self.selectVertex(vertices[x])
                             self.drawVertices()
                             pygame.display.update()
 
@@ -127,6 +127,14 @@ class Pygraph:
         for edge in self.edges:
             edge.draw()
 
+    def drawAll(self):
+        """
+        Draws all vertices and edges then updates the screen
+        """
+        self.drawVertices()
+        self.drawEdges()
+        pygame.display.update()
+
     def resetScreen(self):
         """
         Resets the screen to default
@@ -153,7 +161,7 @@ class Pygraph:
         Vertex.setScreen(self.screen)
         Edge.setScreen(self.screen)
 
-    def select(self, selectable):
+    def selectVertex(self, selectable):
         """
         Sets the primarySelected vertex
         """
@@ -208,14 +216,13 @@ class Pygraph:
         selected: The new primary
         """
         if self.secondarySelected is None and self.primarySelected is None:
-            self.select(selected)
+            self.selectVertex(selected)
         else:
             print("Selecting Primary")
             self.unselectPrimary()
-            self.select(selected)
+            self.selectVertex(selected)
 
-        self.drawVertices()
-        pygame.display.update()
+        self.drawAll()
 
     def unselectSecondary(self):
         """

@@ -19,6 +19,9 @@ class Edge:
         self.vertexTwo = vertexTwo
         self.color = color
 
+        #if vertexOne.getPosX < vertexTwo.getPosX:
+            #self.slope = (vertexTwo.getPosY() - vertexOne.getPosY()) / ()
+
     def getVertexOne(self):
         """
         Returns vertexOne
@@ -69,6 +72,9 @@ class Edge:
         Sets the color to the default color
         """
         self.setColor(self.getDefaultColor())
+
+    #def isInBounds(self, x, y):
+        # TODO write bounds algorithm
 
 
 def setScreen(tempScreen):
