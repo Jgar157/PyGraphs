@@ -3,25 +3,45 @@ The main graph which contains edges and vertices.
 """
 
 import pygame
+from pygame_button import Button
 import Vertex
 import Edge
 
 
+
 class Pygraph:
 
+    RED = (255, 0, 0)
+    BLUE = (0, 0, 255)
+    GREEN = (0, 255, 0)
+    BLACK = (0, 0, 0)
+    WHITE = (255, 255, 255)
+    ORANGE = (255, 180, 0)
+
+    pygame.font.init()
+    primaryFont = pygame.font.SysFont("Comic Sans", 16)
+
+
     def __init__(self, color=(255, 255, 255), xSize=500, ySize=300):
+
+
+
         self.color = color
         self.xSize = xSize
         self.ySize = ySize
+        self.clock = pygame.time.Clock()
+
 
         self.screen = None
         self.primarySelected = None
         self.secondarySelected = None
 
+
         self.vertices = []
         self.edges = []
         self.generateScreen()
         self.setupVerticesAndEdges()
+        self.initButtons()
 
         # Sets up the pygame window
         pygame.init()
@@ -34,14 +54,23 @@ class Pygraph:
         # Loop
         while True:
 
-            foundVertex = self.inputChecker(self.vertices, self.edges, self.screen)
+            if self.inSettingsLoop:
+                self.settingsLoop()
+                self.inputCheckerSettings()
 
-            self.drawEdges()
-            self.drawVertices()
 
-            if foundVertex:
-                pygame.event.wait()
-                pygame.display.update()
+            else:
+                self.inputChecker(self.vertices, self.edges, self.screen)
+                self.drawEdges()
+                self.drawVertices()
+                self.settingsButton.update(self.screen)
+
+
+
+
+            pygame.display.update()
+
+            self.clock.tick(60)
 
     def inputChecker(self, vertices, edges, screen):
         """
@@ -52,26 +81,31 @@ class Pygraph:
 
         for event in ev:
 
+            self.settingsButton.check_event(event)
+
+            if event.type == pygame.QUIT: # Quits the program
+                pygame.quit()
+
+
             # Creates a vertex based on where was clicked
-            if event.type == pygame.MOUSEBUTTONUP:
+            elif event.type == pygame.MOUSEBUTTONUP:
                 pos = pygame.mouse.get_pos()
 
-                for x in range(len(vertices)):  # Scan over all vertices
-                    if vertices[x].isInBounds(pos[0], pos[1]):
+                if not self.screenBoundary.collidepoint(pos):
+                    for x in range(len(vertices)):  # Scan over all vertices
+                        if vertices[x].isInBounds(pos[0], pos[1]):
 
-                        if event.button == 1:
-                            self.selectVertex(vertices[x])
-                            self.drawVertices()
-                            pygame.display.update()
+                            if event.button == 1:
+                                self.selectVertex(vertices[x])
+                                self.drawVertices()
+                                pygame.display.update()
 
-                        elif event.button == 3:
-                            self.makeVertexPrimary(vertices[x])
+                            elif event.button == 3:
+                                self.makeVertexPrimary(vertices[x])
 
-                        return False  # there is no new vertex
+                            return False  # there is no new vertex
+                    self.addVertex(pos)
 
-                # If a vertex has not been clicked then we add a new vertex
-                vertices.append(Vertex.Vertex(pos[0], pos[1]))
-                return True
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_x:
@@ -88,6 +122,12 @@ class Pygraph:
                 pygame.display.update()
 
         return False
+
+    def inputCheckerSettings(self):
+        ev = pygame.event.get()
+        for events in ev:
+            self.settingsExitButton.check_event(events)
+
 
     def generateScreen(self):
         """
@@ -112,6 +152,55 @@ class Pygraph:
             self.primarySelected.addEdge(tempEdge)
             self.secondarySelected.addEdge(tempEdge)
             self.edges.append(tempEdge)
+
+
+    def initButtons(self):
+
+        BUTTON_STYLE = {
+            "text": "Settings",
+            "font": self.primaryFont,
+            "call_on_release": True,
+            "hover_color": self.BLUE,
+            "clicked_color": self.GREEN,
+            "font_color": pygame.Color("Black"),
+            "hover_font_color": None,
+            "clicked_font_color": None,
+            "click_sound": None,
+            "hover_sound": None,
+            }
+
+        EXIT_BUTTON_STYLE = {
+            "text": "X",
+            "font": self.primaryFont,
+            "call_on_release": True,
+            "hover_color": self.RED,
+            "clicked_color": (255,0,200),
+            "font_color": pygame.Color("Black"),
+            "hover_font_color": None,
+            "clicked_font_color": None,
+            "click_sound": None,
+            "hover_sound": None,
+            }
+
+        openSettings = lambda: self.settingsLoop()
+        closeSettings = lambda: self.closeLoop()
+
+
+        self.settingsButton = Button((self.xSize - 50, 0, 50, 20),  self.WHITE, openSettings,  **BUTTON_STYLE)
+        self.settingsButton.update(self.screen)
+        self.screenBoundary = pygame.Rect(self.settingsButton.rect.x - 10, 0, self.settingsButton.rect.x + 10,
+                                          self.ySize)
+
+        self.settingsExitButton = Button((self.xSize - 90, 50, 40, 25), self.WHITE, closeSettings, **EXIT_BUTTON_STYLE)
+        self.inSettingsLoop = False
+
+
+    def addVertex(self, pos):
+        if (pos[0] + Vertex.getBuffer() < self.screenBoundary.x):
+            # If a vertex has not been clicked then we add a new vertex
+            self.vertices.append(Vertex.Vertex(pos[0], pos[1]))
+            return True
+
 
     def drawVertices(self):
         """
@@ -151,6 +240,7 @@ class Pygraph:
         """
         Makes the entire screen white
         """
+        pygame.display.update()
         self.screen.fill((255, 255, 255))
         pygame.display.update()
 
@@ -266,3 +356,25 @@ class Pygraph:
 
         self.drawEdges()
         self.drawVertices()
+
+    def settingsLoop(self):
+
+        self.openSettingsWindow()
+        self.inSettingsLoop = True
+        self.settingsExitButton.update(self.screen)
+        pygame.display.update()
+
+
+    def openSettingsWindow(self):
+        self.screen.fill(self.color)
+        settingsScreen = pygame.Rect(50, 50, self.xSize - 100, self.ySize - 100)
+        pygame.draw.rect(self.screen, self.BLACK, settingsScreen, 2)
+
+    def closeLoop(self):
+        self.inSettingsLoop = False
+        self.clearScreen()
+        pygame.display.update()
+
+
+
+

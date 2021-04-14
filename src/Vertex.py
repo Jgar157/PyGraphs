@@ -119,6 +119,8 @@ class Vertex:
         """
         return self.radius
 
+
+
     def getDefaultColor(self):
         """
         Returns the default color
@@ -147,3 +149,13 @@ def setColor(color):
     :param color: Color of all vertices.
     """
     Vertex.color = color
+
+def getRadius():
+    return Vertex.radius
+
+def getBuffer():
+    """
+    Gets the value of the buffer
+    :return: buffer
+    """
+    return Vertex.buffer
