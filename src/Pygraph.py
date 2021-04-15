@@ -1,11 +1,15 @@
 """
 The main graph which contains edges and vertices.
 """
+import os
 
 import pygame
 from pygame_button import Button
 import Vertex
 import Edge
+import textbox
+
+os.environ["SDL_VIDEO_CENTERED"] = "1"
 
 
 
@@ -41,7 +45,7 @@ class Pygraph:
         self.edges = []
         self.generateScreen()
         self.setupVerticesAndEdges()
-        self.initButtons()
+        self.initInteractables()
 
         # Sets up the pygame window
         pygame.init()
@@ -119,14 +123,29 @@ class Pygraph:
                 elif event.key == pygame.K_DELETE:
                     self.deleteSelected()
 
+                elif event.key == pygame.K_c:
+                    self.createCycle()
+
+                elif event.key == pygame.K_k:
+                    self.createComplete()
+
+                elif event.key == pygame.K_b:
+                    self.createBipartite()
+
                 pygame.display.update()
 
         return False
 
     def inputCheckerSettings(self):
+        """
+        The input checker for the settings loop.
+        ONLY runs during the settings loop.
+        Checks the event of all interactable objects during the settings loop.
+        """
         ev = pygame.event.get()
-        for events in ev:
-            self.settingsExitButton.check_event(events)
+        for event in ev:
+            self.settingsExitButton.check_event(event)
+            self.settingsAcceptButton.check_event(event)
 
 
     def generateScreen(self):
@@ -154,8 +173,17 @@ class Pygraph:
             self.edges.append(tempEdge)
 
 
-    def initButtons(self):
+    def initInteractables(self):
+        """
+        Initialization of buttons
+        """
 
+        # -------------------------------------------------------------------------------------------------------------
+        # --------------------------------------------------Buttons----------------------------------------------------
+        # -------------------------------------------------------------------------------------------------------------
+
+
+        # Button styles are the dictionaries that hold the information on each button
         BUTTON_STYLE = {
             "text": "Settings",
             "font": self.primaryFont,
@@ -174,7 +202,7 @@ class Pygraph:
             "font": self.primaryFont,
             "call_on_release": True,
             "hover_color": self.RED,
-            "clicked_color": (255,0,200),
+            "clicked_color": (139,0,0),
             "font_color": pygame.Color("Black"),
             "hover_font_color": None,
             "clicked_font_color": None,
@@ -182,6 +210,20 @@ class Pygraph:
             "hover_sound": None,
             }
 
+        ACCEPT_SETTINGS_BUTTON_STLE = {
+            "text": "Accept",
+            "font": self.primaryFont,
+            "call_on_release": True,
+            "hover_color": self.BLUE,
+            "clicked_color": (0,191,255),
+            "font_color": pygame.Color("Black"),
+            "hover_font_color": None,
+            "clicked_font_color": None,
+            "click_sound": None,
+            "hover_sound": None,
+        }
+
+        # Lambdas that are passed into buttons
         openSettings = lambda: self.settingsLoop()
         closeSettings = lambda: self.closeLoop()
 
@@ -191,8 +233,23 @@ class Pygraph:
         self.screenBoundary = pygame.Rect(self.settingsButton.rect.x - 10, 0, self.settingsButton.rect.x + 10,
                                           self.ySize)
 
-        self.settingsExitButton = Button((self.xSize - 90, 50, 40, 25), self.WHITE, closeSettings, **EXIT_BUTTON_STYLE)
+        self.settingsExitButton = Button((self.xSize - 90, 50, 40, 25), self.RED, closeSettings, **EXIT_BUTTON_STYLE)
         self.inSettingsLoop = False
+
+        self.settingsAcceptButton = Button((self.xSize / 2 - 30, self.ySize - 70, 60, 20), self.WHITE, closeSettings,
+                                           **ACCEPT_SETTINGS_BUTTON_STLE)
+
+
+
+        # -------------------------------------------------------------------------------------------------------------
+        # --------------------------------------------------Text Box---------------------------------------------------
+        # -------------------------------------------------------------------------------------------------------------
+
+        onClearDefaultVertexColor = None
+        self.setDefaultVertexColor = textbox.TextBox((self.xSize / 2 - 50, self.ySize / 2 - 50, 50, 50),
+                                                     command = onClearDefaultVertexColor, clear_on_enter=True,
+                                                     inactive_on_enter=False)
+        # TODO Fix the command for the text box -> We want it to change vertex default colors
 
 
     def addVertex(self, pos):
@@ -288,10 +345,10 @@ class Pygraph:
         Unselects the primary vertex
         """
         if self.primarySelected is not None:
-            self.primarySelected.setColorDefault()
+            self.primarySelected.setColorToDefault()
 
         if self.secondarySelected is not None:
-            self.secondarySelected.setColorDefault()
+            self.secondarySelected.setColorToDefault()
 
         # Clears both the primary and the secondary
         self.primarySelected = None
@@ -319,7 +376,7 @@ class Pygraph:
         Unselects the secondary vertex clicked
         secondary: The vertex to be unselected
         """
-        self.secondarySelected.setColorDefault()
+        self.secondarySelected.setColorToDefault()
         self.secondarySelected = None
 
     def selectSecondary(self, selected):
@@ -358,23 +415,73 @@ class Pygraph:
         self.drawVertices()
 
     def settingsLoop(self):
+        """
+        This loop runs whenever the settings window is open
+        :return:
+        """
 
-        self.openSettingsWindow()
-        self.inSettingsLoop = True
-        self.settingsExitButton.update(self.screen)
-        pygame.display.update()
+        self.openSettingsWindow() # Open the window
+        self.inSettingsLoop = True # State that we're in the loop
+        self.settingsExitButton.update(self.screen) # Draw the exit button
+        self.settingsAcceptButton.update(self.screen)
+        pygame.display.update() # Update the display
 
 
     def openSettingsWindow(self):
-        self.screen.fill(self.color)
-        settingsScreen = pygame.Rect(50, 50, self.xSize - 100, self.ySize - 100)
+        """
+        Opens the settings window
+        """
+        self.screen.fill(self.color) # Fill the screen white to wipe previous screen
+        settingsScreen = pygame.Rect(50, 50, self.xSize - 100, self.ySize - 100) # Create the settings window
         pygame.draw.rect(self.screen, self.BLACK, settingsScreen, 2)
 
     def closeLoop(self):
+        """
+        Ends the settings loop
+        """
         self.inSettingsLoop = False
         self.clearScreen()
         pygame.display.update()
 
+
+#----------------------------------------------------------------------------------------------------------------------
+#---------------------------------------------------Algorithms---------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------
+    def createCycle(self):
+        """
+        Creates a cycle in order of vertex creation
+        """
+        for number in range(-1, len(self.vertices) - 1):
+            tempEdge = Edge.Edge(self.vertices[number], self.vertices[number + 1])
+            self.edges.append(tempEdge)
+            self.vertices[number].addEdge(tempEdge)
+            self.vertices[number + 1].addEdge(tempEdge)
+
+    def createComplete(self):
+        """
+        Connects every vertex to every other vertex
+        """
+        for vertex in self.vertices:
+            for secondVertex in self.vertices:
+                if vertex is not secondVertex:
+                    tempEdge = Edge.Edge(vertex, secondVertex)
+                    self.edges.append(tempEdge)
+                    vertex.addEdge(tempEdge)
+                    secondVertex.addEdge(tempEdge)
+
+    def createBipartite(self):
+        numberOfVertices = len(self.vertices)
+        halfOfVertices = numberOfVertices // 2
+
+        firstPartite = self.vertices[:halfOfVertices]
+        secondPartite = self.vertices[halfOfVertices:]
+
+        for vertex in firstPartite:
+            for secondVertex in secondPartite:
+                tempEdge = Edge.Edge(vertex, secondVertex)
+                self.edges.append(tempEdge)
+                vertex.addEdge(tempEdge)
+                secondVertex.addEdge(tempEdge)
 
 
 

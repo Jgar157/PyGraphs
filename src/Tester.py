@@ -33,7 +33,7 @@ BUTTON_STYLE = {
 
 class Control(object):
     def __init__(self):
-        self.screen = pg.display.set_mode((500, 500))
+        self.screen = pg.display.set_mode((1000, 1000))
         self.screen_rect = self.screen.get_rect()
         self.clock = pg.time.Clock()
         self.done = False
@@ -41,7 +41,7 @@ class Control(object):
         self.color = WHITE
         message = "Change the screen color."
         self.button = Button(
-            (0, 0, 200, 50), RED, self.change_color, text=message, **BUTTON_STYLE
+            (0, 0, 500, 500), RED, self.change_color, text=message, **BUTTON_STYLE
         )
         self.button.rect.center = (self.screen_rect.centerx, 100)
 
