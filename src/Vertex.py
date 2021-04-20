@@ -15,6 +15,7 @@ class Vertex:
 
     # Default color of a vertex if black.
     black = (0, 0, 0)
+    defaultColor = black
     selectedColor = (0, 0, 255)
     secondarySelectedColor = (255, 0, 0)
 
@@ -89,7 +90,21 @@ class Vertex:
         """
         self.color = color
 
-    def setColorDefault(self):
+    def setDefaultColor(self, color):
+        """
+        Sets the default color
+        :param color: The new default color
+        """
+        Vertex.defaultColor = color
+
+    def getDefaultColor(self):
+        """
+        Returns the default color
+        """
+        return Vertex.defaultColor
+
+
+    def setColorToDefault(self):
         """
         Sets the color to the default color
         """
@@ -119,12 +134,6 @@ class Vertex:
         """
         return self.radius
 
-    def getDefaultColor(self):
-        """
-        Returns the default color
-        """
-        return self.black
-
 
 def getScreen():
     """
@@ -147,3 +156,13 @@ def setColor(color):
     :param color: Color of all vertices.
     """
     Vertex.color = color
+
+def getRadius():
+    return Vertex.radius
+
+def getBuffer():
+    """
+    Gets the value of the buffer
+    :return: buffer
+    """
+    return Vertex.buffer
